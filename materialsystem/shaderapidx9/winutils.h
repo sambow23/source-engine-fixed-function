@@ -6,7 +6,12 @@
 #ifndef WINUTILS_H
 #define WINUTILS_H
 
-#include "togl/rendermechanism.h" // for win types
+// Include appropriate header for Windows types based on backend
+#if defined( USE_DXVK_NATIVE )
+	#include "locald3dtypes.h"  // DXVK provides Windows types
+#else
+	#include "togl/rendermechanism.h" // ToGL provides Windows types
+#endif
 
 #if !defined(_WIN32)
 

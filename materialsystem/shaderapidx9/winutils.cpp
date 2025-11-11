@@ -85,9 +85,13 @@ void SetThreadAffinityMask( void *hThread, int nMask )
 	DebuggerBreak();
 }
 
+#if !defined(USE_DXVK_NATIVE)
+// GUID comparison operator (ToGL only - DXVK's windows.h provides GUID as a complete type)
 bool GUID::operator==( const struct _GUID &other ) const
 {
 	DebuggerBreak();
 	return memcmp( this, &other, sizeof( GUID ) ) == 0;
 }
 #endif
+
+#endif // !_WIN32

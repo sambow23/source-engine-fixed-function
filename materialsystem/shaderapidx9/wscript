@@ -28,6 +28,7 @@ def configure(conf):
 
 def build(bld):
 	source = [
+		'd3dx_impl.cpp',  # D3DX math library implementation for DXVK
 		'colorformatdx8.cpp',
 		'../../public/filesystem_helpers.cpp',
 		'hardwareconfig.cpp',
@@ -67,15 +68,43 @@ def build(bld):
 
 	defines = []
 
-	libs = ['tier0','tier1','tier2','vstdlib','togl','bitmap','mathlib']
+	# Base libraries
+	libs = ['tier0','tier1','tier2','vstdlib','bitmap','mathlib']
+
+	# Graphics backend selection
+	external_libs = []
+	libpath = []
+	
+	if bld.env.DXVK:
+		# DXVK-native: Use native DirectX 9 headers from DXVK
+		home = os.path.expanduser('~')
+		# DXVK headers FIRST to get d3d9.h, we'll implement D3DX ourselves
+		# We don't actually include Wine headers - we have our own D3DX compatibility layer
+		includes = [
+			home + '/.local/include/dxvk'            # DXVK's D3D9 headers (FIRST)
+		] + includes
+		# Add library path for DXVK
+		libpath += [home + '/.local/lib/aarch64-linux-gnu']
+		# External DXVK libraries - link against DXVK's D3D9 implementation
+		external_libs += ['dxvk_d3d9', 'dxvk_dxgi', 'SDL2']
+		# Still need togl for appframework SDL/OpenGL initialization
+		libs += ['togl']
+	elif bld.env.GL or bld.env.TOGLES:
+		# ToGL: link against OpenGL wrapper
+		libs += ['togl']
 
 	if bld.env.DEST_OS == 'android':
 		libs += ['ANDROID_SUPPORT']
-	elif bld.env.DEST_OS == 'win32' and not bld.env.GL:
+	elif bld.env.DEST_OS == 'win32' and not bld.env.GL and not bld.env.DXVK:
 		libs += ['D3D9', 'D3DX9', 'bzip2']
 	
 	install_path = bld.env.LIBDIR
 
+	# Add DXVK_TYPES_DEFINED only for this module when using DXVK
+	# This tells Source Engine headers not to define Windows types that DXVK provides
+	if bld.env.DXVK:
+		defines += ['DXVK_TYPES_DEFINED']
+	
 	bld.shlib(
 		source   = source,
 		target   = PROJECT_NAME,
@@ -84,6 +113,8 @@ def build(bld):
 		includes = includes,
 		defines  = defines,
 		use      = libs,
+		lib      = external_libs,
+		libpath  = libpath,
 		install_path = install_path,
 		subsystem = bld.env.MSVC_SUBSYSTEM,
 		idx      = bld.get_taskgen_count()

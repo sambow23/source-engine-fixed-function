@@ -197,10 +197,12 @@ private:
 
 	bool			m_bExternallySuppliedWindow;
 
-#if defined( WIN32 )
+#if defined( WIN32 ) || defined( USE_DXVK_NATIVE )
 	HWND			m_hWindow;
 	#if !defined( USE_SDL )
+		#ifdef WIN32
 		HINSTANCE		m_hInstance;
+		#endif
 
 		// Stores a wndproc to chain message calls to
 		WNDPROC			m_ChainedWindowProc;
@@ -923,7 +925,7 @@ bool CGame::CreateGameWindow( void )
 #ifdef TOGLES
 		V_strcat( windowName, " - OpenGLES", sizeof( windowName ) );
 #else
-		V_strcat( windowName, " - OpenGL", sizeof( windowName ) );
+		V_strcat( windowName, " - Vulkan", sizeof( windowName ) );
 #endif
 	}
 
@@ -1548,7 +1550,7 @@ void *CGame::GetMainWindow( void )
 
 void *CGame::GetMainDeviceWindow( void )
 {
-#if defined( DX_TO_GL_ABSTRACTION ) && defined( USE_SDL )
+#if (defined( DX_TO_GL_ABSTRACTION ) || defined( USE_DXVK_NATIVE )) && defined( USE_SDL )
 	return (void*)m_pSDLWindow;
 #else
 	return (void*)m_hWindow;

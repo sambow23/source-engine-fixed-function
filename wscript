@@ -180,7 +180,13 @@ def define_platform(conf):
 	conf.env.DEDICATED = conf.options.DEDICATED
 	conf.env.TESTS = conf.options.TESTS
 	conf.env.TOGLES = conf.options.TOGLES
-	conf.env.GL = conf.options.GL and not conf.options.TESTS and not conf.options.DEDICATED
+	conf.env.DXVK = conf.options.DXVK and not conf.options.TESTS and not conf.options.DEDICATED
+	conf.env.GL = conf.options.GL and not conf.options.TESTS and not conf.options.DEDICATED and not conf.options.DXVK
+	
+	# GCC 14+ removed deprecated C string functions from std:: namespace
+	# Re-enable them globally for all builds
+	if conf.env.COMPILER_CC == 'gcc':
+		conf.define('_GLIBCXX_USE_DEPRECATED', 1)
 	conf.env.OPUS = conf.options.OPUS
 
 	arch32 = conf.run_test(CPP_32BIT_CHECK, 'Testing 32bit support')
@@ -202,6 +208,20 @@ def define_platform(conf):
 			'GL_GLEXT_PROTOTYPES',
 			'BINK_VIDEO'
 		])
+
+	if conf.env.DXVK:
+		conf.env.append_unique('DEFINES', [
+			'USE_DXVK_NATIVE',      # Use DXVK-native backend
+			'DXVK_WSI_SDL2',        # DXVK window system integration via SDL2
+			'BINK_VIDEO'            # Video support
+			# Note: NOT defining DX_TO_GL_ABSTRACTION - we want native DirectX headers from DXVK
+			# Note: DXVK_TYPES_DEFINED is set per-module in shaderapidx9/wscript, not globally
+		])
+		# Add DXVK include paths globally for all subprojects
+		import os
+		home = os.path.expanduser('~')
+		dxvk_include = home + '/.local/include/dxvk'
+		conf.env.append_unique('INCLUDES', [dxvk_include])
 
 	if conf.options.TOGLES:
 		conf.env.append_unique('DEFINES', ['TOGLES'])
@@ -302,6 +322,9 @@ def options(opt):
 
 	grp.add_option('--use-togl', action = 'store', dest = 'GL', type = 'int', default = sys.platform != 'win32',
 		help = 'build engine with ToGL [default: %default]')
+
+	grp.add_option('--use-dxvk', action = 'store_true', dest = 'DXVK', default = False,
+		help = 'build engine with DXVK-native (Vulkan) [default: %default]')
 
 	grp.add_option('--build-games', action = 'store', dest = 'GAMES', type = 'string', default = 'hl2',
 		help = 'build games [default: %default]')
@@ -459,8 +482,28 @@ def configure(conf):
 
 	define_platform(conf)
 
+	# Build DXVK if enabled
+	if conf.env.DXVK:
+		import subprocess
+		import os
+		
+		Logs.info('Building DXVK-native...')
+		script_path = os.path.join(conf.path.abspath(), 'scripts', 'build_dxvk.sh')
+		install_prefix = os.path.expanduser('~/.local')
+		
+		try:
+			subprocess.check_call([script_path, install_prefix])
+			Logs.info('DXVK built successfully')
+		except subprocess.CalledProcessError as e:
+			conf.fatal('Failed to build DXVK: {}'.format(e))
+		except FileNotFoundError:
+			conf.fatal('DXVK build script not found. Make sure external/dxvk submodule is initialized.')
+
 	if conf.env.TOGLES:
 		projects['game'] += ['togles']
+	elif conf.env.DXVK:
+		# DXVK still needs togl for SDL/OpenGL initialization in appframework
+		projects['game'] += ['togl']
 	elif conf.env.GL:
 		projects['game'] += ['togl']
 
@@ -575,7 +618,10 @@ def configure(conf):
 	# And here C++ flags starts to be treated separately
 	cxxflags = list(cflags)
 	if conf.env.DEST_OS != 'win32':
-		cxxflags += ['-std=c++11','-fpermissive']
+		# Use GNU C++11 instead of strict C++11 to get GNU extensions
+		cxxflags += ['-std=gnu++11','-fpermissive']
+		# Ubuntu 25.04+: Use wrapper cstring header to avoid broken libstdc++ cstring
+		cxxflags += ['-D_GNU_SOURCE', '-include', os.path.abspath('.')+'/cstring_wrapper.h']
 
 	if conf.env.COMPILER_CC == 'gcc':
 		conf.define('COMPILER_GCC', 1)
@@ -631,6 +677,62 @@ def build(bld):
 		sdl_name = 'SDL2.dll' if bld.env.DEST_OS == 'win32' else 'libSDL2.so'
 		sdl_path = os.path.join('lib', bld.env.DEST_OS, bld.env.DEST_CPU, sdl_name)
 		bld.install_files(bld.env.LIBDIR, [sdl_path])
+	
+	# Install DXVK libraries if enabled
+	if bld.env.DXVK:
+		import platform
+		import glob
+		import shutil
+		
+		arch = platform.machine()
+		arch_lib_dir = '{}-linux-gnu'.format(arch)
+		dxvk_lib_path = os.path.expanduser('~/.local/lib/{}/'.format(arch_lib_dir))
+		
+		# Find only the actual DXVK library files (not symlinks)
+		# We only need libdxvk_d3d9 and libdxvk_dxgi for D3D9
+		dxvk_libs = []
+		for pattern in ['libdxvk_d3d9.so.*.?????', 'libdxvk_dxgi.so.*.?????']:
+			matches = glob.glob(os.path.join(dxvk_lib_path, pattern))
+			# Filter to only real files (not symlinks)
+			dxvk_libs.extend([f for f in matches if not os.path.islink(f)])
+		
+		if dxvk_libs:
+			Logs.info('Installing DXVK libraries: {}'.format(', '.join([os.path.basename(f) for f in dxvk_libs])))
+			
+			# Copy DXVK libraries directly to the install directory
+			install_dir = bld.env.LIBDIR
+			if not os.path.exists(install_dir):
+				os.makedirs(install_dir)
+			
+			for lib in dxvk_libs:
+				lib_name = os.path.basename(lib)
+				dest_path = os.path.join(install_dir, lib_name)
+				
+				# Copy the actual library file
+				shutil.copy2(lib, dest_path)
+				Logs.info('  Copied {} -> {}'.format(lib_name, install_dir))
+				
+				# Create symlinks for compatibility
+				# lib_name is like: libdxvk_d3d9.so.0.20701
+				# We need: libdxvk_d3d9.so.0 -> libdxvk_d3d9.so.0.20701
+				#          libdxvk_d3d9.so -> libdxvk_d3d9.so.0
+				parts = lib_name.split('.')
+				base_name = '.'.join(parts[:2])  # libdxvk_d3d9.so
+				soversion = '.'.join(parts[:3])  # libdxvk_d3d9.so.0
+				
+				# Create symlink .so.0 -> .so.0.version
+				soversion_path = os.path.join(install_dir, soversion)
+				if os.path.lexists(soversion_path):
+					os.remove(soversion_path)
+				os.symlink(lib_name, soversion_path)
+				
+				# Create symlink .so -> .so.0
+				so_path = os.path.join(install_dir, base_name)
+				if os.path.lexists(so_path):
+					os.remove(so_path)
+				os.symlink(soversion, so_path)
+		else:
+			Logs.warn('DXVK libraries not found at {}. Make sure DXVK was built successfully.'.format(dxvk_lib_path))
 
 	if bld.env.DEST_OS == 'win32':
 		projects['game'] += ['utils/bzip2']

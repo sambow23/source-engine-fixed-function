@@ -147,8 +147,13 @@ typedef int BOOL;
 #endif
 
 typedef int qboolean;
+
+// Define these for all platforms, UNLESS DXVK will define them
+// When DXVK_TYPES_DEFINED is set (by locald3dtypes.h), DXVK's windows.h will provide these types
+#if !defined(DXVK_TYPES_DEFINED)
 typedef unsigned long ULONG;
 typedef unsigned char BYTE;
+#endif
 typedef unsigned char byte;
 typedef unsigned short word;
 #ifdef _WIN32

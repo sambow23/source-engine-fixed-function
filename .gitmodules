@@ -7,3 +7,6 @@
 [submodule "lib"]
 	path = lib
 	url = https://github.com/nillerusr/source-engine-libs.git
+[submodule "external/dxvk"]
+	path = external/dxvk
+	url = https://github.com/doitsujin/dxvk.git

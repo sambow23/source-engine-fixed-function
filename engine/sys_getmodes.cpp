@@ -1119,11 +1119,27 @@ void CVideoMode_Common::DrawNullBackground( void *hHDC, int w, int h )
 
 #ifndef _WIN32
 
+// Define Windows types for struct definitions below
 typedef unsigned char BYTE;
 typedef signed long LONG;
 typedef unsigned long ULONG;
-
 typedef char * LPSTR;
+
+// GUID structure
+typedef struct {
+    unsigned long  Data1;
+    unsigned short Data2;
+    unsigned short Data3;
+    unsigned char  Data4[8];
+} GUID;
+
+// RECT structure
+typedef struct {
+    LONG left;
+    LONG top;
+    LONG right;
+    LONG bottom;
+} RECT;
 
 typedef struct tagBITMAPINFOHEADER{
     DWORD      biSize;

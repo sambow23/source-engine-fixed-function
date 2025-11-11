@@ -188,6 +188,9 @@ bool CShaderDeviceMgrDx8::Connect( CreateInterfaceFn factory )
 	}
 	
 	mat_supports_d3d9ex.SetValue( bD3D9ExAvailable ? 1 : 0 );
+#elif defined( USE_DXVK_NATIVE )
+	// DXVK-native: Delay D3D9 creation until Init() when SDL window is ready
+	m_pD3D = NULL;
 #else
 	#if defined( DO_DX9_HOOK )
 		m_pD3D = Direct3DCreate9Hook(D3D_SDK_VERSION);
@@ -196,11 +199,14 @@ bool CShaderDeviceMgrDx8::Connect( CreateInterfaceFn factory )
 	#endif
 #endif
 
+#if !defined( USE_DXVK_NATIVE )
+	// For non-DXVK builds, check D3D9 was created successfully
 	if ( !m_pD3D )
 	{
 		Warning( "Failed to create D3D9!\n" );
 		return false;
 	}
+#endif
 
 #if defined( PIX_INSTRUMENTATION ) && defined ( DX_TO_GL_ABSTRACTION ) && defined( _WIN32 )
 	// This is a little odd, but AMD PerfStudio hooks D3D9.DLL and intercepts all of the D3DPERF API's (even for OpenGL apps).
@@ -265,6 +271,21 @@ void CShaderDeviceMgrDx8::Disconnect()
 //-----------------------------------------------------------------------------
 InitReturnVal_t CShaderDeviceMgrDx8::Init( )
 {
+#if defined( USE_DXVK_NATIVE )
+	// DXVK-native: Create D3D9 now that SDL is initialized
+	if ( !m_pD3D )
+	{
+		Warning( "DXVK-native: Creating D3D9 interface after SDL initialization...\n" );
+		m_pD3D = Direct3DCreate9(D3D_SDK_VERSION);
+		if ( !m_pD3D )
+		{
+			Warning( "DXVK-native: Failed to create D3D9!\n" );
+			return INIT_FAILED;
+		}
+		Warning( "DXVK-native: D3D9 interface created successfully\n" );
+	}
+#endif
+
 	// FIXME: Remove call to InitAdapterInfo once Steam startup issues are resolved.
 	// Do it in Connect instead.
 	InitAdapterInfo();
@@ -317,6 +338,22 @@ void CShaderDeviceMgrDx8::InitAdapterInfo()
 
 	m_bAdapterInfoIntialized = true;
 	m_Adapters.RemoveAll();
+
+#if defined( USE_DXVK_NATIVE )
+	// DXVK-native: Create D3D9 now if not already created
+	// This can be called before Init() via GetAdapterCount() -> InitAdapterInfo()
+	if ( !m_pD3D )
+	{
+		Warning( "DXVK-native: Creating D3D9 interface in InitAdapterInfo()...\n" );
+		m_pD3D = Direct3DCreate9(D3D_SDK_VERSION);
+		if ( !m_pD3D )
+		{
+			Warning( "DXVK-native: Failed to create D3D9 in InitAdapterInfo()!\n" );
+			return;
+		}
+		Warning( "DXVK-native: D3D9 interface created successfully\n" );
+	}
+#endif
 
 	Assert(m_pD3D);
 	int nCount = m_pD3D->GetAdapterCount( );

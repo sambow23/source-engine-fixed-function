@@ -92,7 +92,8 @@ void MemFreeScratch()
 	--s_nBufDepth;
 }
 
-#ifdef POSIX
+// DXVK provides ZeroMemory as a macro, so don't implement it
+#if defined(POSIX) && !defined(USE_DXVK_NATIVE)
 void ZeroMemory( void *mem, size_t length )
 {
 	memset( mem, 0x0, length );

@@ -4,9 +4,17 @@
 //
 //=============================================================================//
 
-#if defined( _WIN32 ) && !defined( _X360 ) && !defined( DX_TO_GL_ABSTRACTION )
-#include <windows.h>
-#include "../dx9sdk/include/d3d9types.h"
+#if (defined( _WIN32 ) && !defined( _X360 ) && !defined( DX_TO_GL_ABSTRACTION )) || defined( USE_DXVK_NATIVE )
+	#if defined( USE_DXVK_NATIVE )
+		// DXVK: use DXVK's headers for D3DFORMAT constants
+		// Need windows.h first for basic types (DWORD, UINT, etc.)
+		#include <windows.h>
+		#include <d3d9types.h>
+	#elif defined( _WIN32 )
+		// Windows: use DirectX SDK headers
+		#include <windows.h>
+		#include "../dx9sdk/include/d3d9types.h"
+	#endif
 #endif
 #include "bitmap/imageformat.h"
 #include "basetypes.h"
@@ -297,7 +305,8 @@ int GetNumMipMapLevels( int width, int height, int depth )
 // convert back and forth from D3D format to ImageFormat, regardless of
 // whether it's supported or not
 //-----------------------------------------------------------------------------
-ImageFormat D3DFormatToImageFormat( D3DFORMAT format )
+#if (defined( _WIN32 ) && !defined( _X360 ) && !defined( DX_TO_GL_ABSTRACTION )) || defined( USE_DXVK_NATIVE )
+ImageFormat D3DFormatToImageFormat( int format )  // D3DFORMAT is typedef int
 {
 #if defined( _X360 )
 	if ( IS_D3DFORMAT_SRGB( format ) )
@@ -415,7 +424,7 @@ ImageFormat D3DFormatToImageFormat( D3DFORMAT format )
 	return IMAGE_FORMAT_UNKNOWN;
 }
 
-D3DFORMAT ImageFormatToD3DFormat( ImageFormat format )
+int ImageFormatToD3DFormat( ImageFormat format )  // Returns D3DFORMAT (typedef int)
 {
 	// This doesn't care whether it's supported or not
 	switch ( format )
@@ -525,6 +534,7 @@ D3DFORMAT ImageFormatToD3DFormat( ImageFormat format )
 
 	return D3DFMT_UNKNOWN;
 }
+#endif // (_WIN32 && !_X360 && !DX_TO_GL_ABSTRACTION) || USE_DXVK_NATIVE
 
 #pragma warning (default:4063)
 

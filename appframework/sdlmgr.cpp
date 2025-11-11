@@ -173,11 +173,16 @@ void	CheckGLError( int line )
 
 	//borrowed from GLMCheckError.. slightly different
 	
-	
+#if defined( DX_TO_GL_ABSTRACTION )
 	GLenum errorcode = (GLenum)gGL->glGetError();
 	//GLenum errorcode2 = 0;
 	if ( errorcode != GL_NO_ERROR )
 	{
+#else
+	// DXVK-native: no OpenGL error checking needed
+	if ( false )
+	{
+#endif
 		const char	*decodedStr = GLMDecode( eGL_ERROR, errorcode );
 
 		printf( "\n(%d) GL Error %08x = '%s'", line, errorcode, decodedStr );
@@ -709,6 +714,7 @@ void CSDLMgr::Shutdown()
 {
 	SDLAPP_FUNC;
 
+#if defined( DX_TO_GL_ABSTRACTION )
 	if (gGL && m_readFBO)
 #ifdef TOGLES
 		gGL->glDeleteFramebuffers(1, &m_readFBO);
@@ -716,6 +722,7 @@ void CSDLMgr::Shutdown()
 		gGL->glDeleteFramebuffersEXT(1, &m_readFBO);
 #endif
 	m_readFBO = 0;
+#endif // DX_TO_GL_ABSTRACTION
 
 	if ( m_Window )
 	{
@@ -817,7 +824,9 @@ bool CSDLMgr::CreateHiddenGameWindow( const char *pTitle, int width, int height 
 	int x = SDL_WINDOWPOS_CENTERED;
 	int y = SDL_WINDOWPOS_CENTERED;
 	int flags = SDL_WINDOW_HIDDEN;
-#if defined( DX_TO_GL_ABSTRACTION )
+#if defined( USE_DXVK_NATIVE )
+	flags |= SDL_WINDOW_VULKAN;  // DXVK-native needs Vulkan support
+#elif defined( DX_TO_GL_ABSTRACTION )
 	flags |= SDL_WINDOW_OPENGL;
 #endif
 	m_Window = SDL_CreateWindow( pTitle, x, y, width, height, flags );

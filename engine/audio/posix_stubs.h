@@ -62,8 +62,12 @@
 typedef wchar_t BCHAR;
 
 typedef uint MMRESULT;
-typedef uint32 *DWORD_PTR;
+
+// Define Windows types for POSIX (regardless of DXVK, since we don't include windows.h globally now)
 typedef char *LPCSTR;
+typedef uint32 *DWORD_PTR;
+typedef uint32 UINT_PTR;
+
 typedef uint POINTL;
 
 #define IDLE_PRIORITY_CLASS	1

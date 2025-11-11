@@ -21,8 +21,9 @@ enum NormalDecodeMode_t
 };
 
 // Forward declaration
-#ifdef _WIN32
-typedef enum _D3DFORMAT D3DFORMAT;
+// Note: For DXVK builds, D3DFORMAT is defined by d3d9types.h (included by locald3dtypes.h)
+#if defined(_WIN32) && !defined(USE_DXVK_NATIVE)
+	typedef enum _D3DFORMAT D3DFORMAT;
 #endif
 
 //-----------------------------------------------------------------------------
@@ -108,7 +109,7 @@ enum ImageFormat
 	NUM_IMAGE_FORMATS
 };
 
-#if defined( POSIX  ) || defined( DX_TO_GL_ABSTRACTION )
+#if ( defined( POSIX  ) || defined( DX_TO_GL_ABSTRACTION ) ) && !defined( USE_DXVK_NATIVE )
 typedef enum _D3DFORMAT
 	{
 		D3DFMT_INDEX16,
@@ -410,8 +411,10 @@ namespace ImageLoader
 	// convert back and forth from D3D format to ImageFormat, regardless of
 	// whether it's supported or not
 	//-----------------------------------------------------------------------------
-	ImageFormat D3DFormatToImageFormat( D3DFORMAT format );
-	D3DFORMAT ImageFormatToD3DFormat( ImageFormat format );
+	#if (defined(_WIN32) && !defined(_X360) && !defined(DX_TO_GL_ABSTRACTION)) || defined(USE_DXVK_NATIVE)
+	ImageFormat D3DFormatToImageFormat( int format );   // Use int instead of D3DFORMAT for compatibility
+	int ImageFormatToD3DFormat( ImageFormat format );
+	#endif
 
 	// Flags for ResampleRGBA8888
 	enum

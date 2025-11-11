@@ -45,6 +45,10 @@
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
+// DXVK-native: DON'T include windows.h globally - it interferes with C++ stdlib
+// Instead, only include it in specific files that need DirectX types
+// The actual typedefs are done below in the POSIX section
+
 #include "wchartypes.h"
 #include "basetypes.h"
 #include "tier0/valve_off.h"
@@ -820,8 +824,15 @@ typedef void * HINSTANCE;
 #define _wtoi(arg) wcstol(arg, NULL, 10)
 #define _wtoi64(arg) wcstoll(arg, NULL, 10)
 
-typedef uintp HMODULE;
-typedef void *HANDLE;
+// Don't redefine these if already defined (e.g., by forward declarations above or by DXVK)
+#if !defined(DXVK_TYPES_DEFINED)
+	#ifndef HMODULE
+	typedef uintp HMODULE;
+	#endif
+	#ifndef HANDLE
+	typedef void *HANDLE;
+	#endif
+#endif
 #endif
 
 //-----------------------------------------------------------------------------

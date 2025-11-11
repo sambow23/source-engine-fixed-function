@@ -149,6 +149,10 @@ def build(bld):
 	] + bld.env.INCLUDES_SDL2
 
 	defines = []
+	
+	# Add DXVK_TYPES_DEFINED for DXVK builds to prevent type conflicts
+	if bld.env.DXVK:
+		defines += ['DXVK_TYPES_DEFINED']
 
 	libs = ['tier0','shaderlib','tier1','mathlib']
 

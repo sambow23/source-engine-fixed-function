@@ -21,6 +21,7 @@
 
 #if defined( POSIX )
 #include <dlfcn.h>
+#include <execinfo.h>  // For backtrace() and backtrace_symbols()
 #endif
 
 #if defined( USE_SDL )

@@ -16,6 +16,11 @@
 #ifndef _snprintf
 #define _snprintf snprintf
 #endif
+// Ubuntu 25.04+: Declare strncpy directly
+#include <stddef.h>  // For size_t
+extern "C" {
+	extern char *strncpy (char *__restrict __dest, const char *__restrict __src, size_t __n) noexcept;
+}
 #endif
 
 #include <stdio.h>

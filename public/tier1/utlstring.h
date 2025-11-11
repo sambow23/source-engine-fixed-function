@@ -10,6 +10,14 @@
 #pragma once
 #endif
 
+// Ubuntu 25.04+: Ensure C string functions are available
+#include <stddef.h>  // For size_t
+extern "C" {
+	extern char *strncpy (char *__restrict __dest, const char *__restrict __src, size_t __n) noexcept;
+	extern int strcmp (const char *__s1, const char *__s2) noexcept;
+	extern size_t strlen (const char *__s) noexcept;
+	// Note: strdup and strchr are omitted as they conflict with other declarations
+}
 
 #include "tier1/utlmemory.h"
 #include "tier1/strtools.h"

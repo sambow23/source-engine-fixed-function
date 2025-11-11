@@ -45,6 +45,12 @@ def build(bld):
 	]
 
 	defines = []
+	
+	# Add DXVK support for D3DFORMAT conversion functions
+	if bld.env.DXVK:
+		home = os.path.expanduser('~')
+		includes = [home + '/.local/include/dxvk'] + includes
+		defines += ['USE_DXVK_NATIVE', 'DXVK_TYPES_DEFINED']
 
 	libs = []
 	
