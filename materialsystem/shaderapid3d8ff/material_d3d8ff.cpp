@@ -389,8 +389,9 @@ void CMaterialFallbackD3D8FF::GetMaterialColor( IMaterialVar *pVar, D3DCOLOR &co
 		return;
 	}
 	
-	float r, g, b;
-	pVar->GetVecValue( &r, &g, &b );
+	float rgb[3];
+	pVar->GetVecValue( rgb, 3 );
+	float r = rgb[0], g = rgb[1], b = rgb[2];
 	
 	int ir = (int)(r * 255.0f);
 	int ig = (int)(g * 255.0f);
@@ -452,17 +453,14 @@ void CMaterialFallbackD3D8FF::DisableStage( FixedFunctionMaterialState_t &state,
 //-----------------------------------------------------------------------------
 void CMaterialFallbackD3D8FF::TranslateMaterialFlags( IMaterialInternal *pMaterial, FixedFunctionMaterialState_t &state )
 {
-	// Get material flags
-	int flags = pMaterial->GetMaterialVarFlags();
-	
 	// Two-sided
-	if ( flags & MATERIAL_VAR_NOCULL )
+	if ( pMaterial->GetMaterialVarFlag( MATERIAL_VAR_NOCULL ) )
 	{
 		state.m_bTwoSided = true;
 	}
 	
 	// Alpha test
-	if ( flags & MATERIAL_VAR_ALPHATEST )
+	if ( pMaterial->GetMaterialVarFlag( MATERIAL_VAR_ALPHATEST ) )
 	{
 		state.m_bAlphaTest = true;
 		
@@ -479,7 +477,7 @@ void CMaterialFallbackD3D8FF::TranslateMaterialFlags( IMaterialInternal *pMateri
 	}
 	
 	// Vertex color
-	if ( flags & MATERIAL_VAR_VERTEXCOLOR )
+	if ( pMaterial->GetMaterialVarFlag( MATERIAL_VAR_VERTEXCOLOR ) )
 	{
 		state.m_bVertexColor = true;
 	}
@@ -490,17 +488,15 @@ void CMaterialFallbackD3D8FF::TranslateMaterialFlags( IMaterialInternal *pMateri
 //-----------------------------------------------------------------------------
 void CMaterialFallbackD3D8FF::TranslateBlendMode( IMaterialInternal *pMaterial, FixedFunctionMaterialState_t &state )
 {
-	int flags = pMaterial->GetMaterialVarFlags();
-	
 	// Additive blending
-	if ( flags & MATERIAL_VAR_ADDITIVE )
+	if ( pMaterial->GetMaterialVarFlag( MATERIAL_VAR_ADDITIVE ) )
 	{
 		state.m_bAlphaBlend = true;
 		state.m_SrcBlend = D3DBLEND_ONE;
 		state.m_DestBlend = D3DBLEND_ONE;
 	}
 	// Translucent
-	else if ( flags & MATERIAL_VAR_TRANSLUCENT )
+	else if ( pMaterial->GetMaterialVarFlag( MATERIAL_VAR_TRANSLUCENT ) )
 	{
 		state.m_bAlphaBlend = true;
 		state.m_SrcBlend = D3DBLEND_SRCALPHA;

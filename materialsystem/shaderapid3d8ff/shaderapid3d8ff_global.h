@@ -20,12 +20,15 @@ class IShaderShadow;
 class IShaderAPI;
 class IHardwareConfigInternal;
 class IMaterialSystemHardwareConfig;
+class CShaderDeviceD3D8FF;
 
 // Global interfaces
 extern IShaderUtil* g_pShaderUtil;
 extern IShaderShadow* g_pShaderShadow;
+extern IShaderAPI* g_pShaderAPI;
 extern IHardwareConfigInternal* g_pHWConfig;
 extern IMaterialSystemHardwareConfig* g_pMaterialSystemHardwareConfig;
+extern CShaderDeviceD3D8FF* g_pShaderDeviceD3D8FF;
 
 //-----------------------------------------------------------------------------
 // The main hardware config interface

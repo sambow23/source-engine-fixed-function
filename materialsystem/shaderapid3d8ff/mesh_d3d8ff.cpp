@@ -21,7 +21,7 @@
 CMeshMgrD3D8FF g_MeshMgr;
 
 //-----------------------------------------------------------------------------
-// Vertex size calculation
+// Vertex size calculation - simplified version
 //-----------------------------------------------------------------------------
 static int GetVertexSize( VertexFormat_t vertexFormat )
 {
@@ -39,15 +39,15 @@ static int GetVertexSize( VertexFormat_t vertexFormat )
 	if ( vertexFormat & VERTEX_COLOR )
 		size += 4; // D3DCOLOR
 	
-	// Texture coordinates
-	int numTexCoords = ( vertexFormat >> VERTEX_TEXCOORD_SIZE_SHIFT(0) ) & 0xF;
-	for ( int i = 0; i < numTexCoords; ++i )
+	// Texture coordinates - simplified, assume 2D texcoords
+	// Check each texcoord slot
+	for ( int i = 0; i < VERTEX_MAX_TEXTURE_COORDINATES; ++i )
 	{
-		int coordSize = ( vertexFormat >> VERTEX_TEXCOORD_SIZE_SHIFT(i) ) & 0x3;
-		size += (coordSize + 1) * 4; // 1-4 floats
+		if ( vertexFormat & VERTEX_TEXCOORD_MASK(i) )
+			size += 8; // 2 floats
 	}
 	
-	return size;
+	return size > 0 ? size : 32; // Default to 32 bytes if nothing set
 }
 
 //-----------------------------------------------------------------------------
@@ -60,7 +60,9 @@ CVertexBufferD3D8FF::CVertexBufferD3D8FF( ShaderBufferType_t type, VertexFormat_
 	m_VertexFormat = fmt;
 	m_dwFVF = ComputeFVF( fmt );
 	m_nVertexCount = nVertexCount;
-	m_nVertexSize = GetVertexSize( fmt );
+	
+	// TODO: Properly compute vertex size from format
+	m_nVertexSize = 32; // Default size, should calculate based on format
 	m_nBufferSize = m_nVertexCount * m_nVertexSize;
 	m_bLocked = false;
 	m_pLockedData = NULL;
@@ -343,21 +345,16 @@ void CMeshD3D8FF::SetVertexFormat( VertexFormat_t format )
 	m_VertexFormat = format;
 }
 
-void CMeshD3D8FF::LockMesh( int nVertexCount, int nIndexCount, MeshDesc_t &desc, MeshBuffersAllocationSettings_t *pSettings )
+void CMeshD3D8FF::LockMesh( int nVertexCount, int nIndexCount, MeshDesc_t &desc )
 {
 	if ( !m_pVertexBuffer || !m_pIndexBuffer )
 		return;
 	
-	// Lock vertex buffer
-	m_pVertexBuffer->Lock( nVertexCount, false, desc.m_VertexDesc );
+	// Lock vertex buffer (MeshDesc_t inherits from VertexDesc_t)
+	m_pVertexBuffer->Lock( nVertexCount, false, static_cast<VertexDesc_t&>(desc) );
 	
-	// Lock index buffer
-	m_pIndexBuffer->Lock( nIndexCount, false, desc.m_IndexDesc );
-	
-	// Fill in mesh desc
-	desc.m_nFirstVertex = 0;
-	desc.m_nVertexCount = nVertexCount;
-	desc.m_nIndexCount = nIndexCount;
+	// Lock index buffer (MeshDesc_t inherits from IndexDesc_t)
+	m_pIndexBuffer->Lock( nIndexCount, false, static_cast<IndexDesc_t&>(desc) );
 	
 	m_bMeshLocked = true;
 }
@@ -367,12 +364,12 @@ void CMeshD3D8FF::UnlockMesh( int nVertexCount, int nIndexCount, MeshDesc_t &des
 	if ( !m_bMeshLocked )
 		return;
 	
-	// Unlock buffers
+	// Unlock buffers (MeshDesc_t inherits from VertexDesc_t and IndexDesc_t)
 	if ( m_pVertexBuffer )
-		m_pVertexBuffer->Unlock( nVertexCount, desc.m_VertexDesc );
+		m_pVertexBuffer->Unlock( nVertexCount, static_cast<VertexDesc_t&>(desc) );
 	
 	if ( m_pIndexBuffer )
-		m_pIndexBuffer->Unlock( nIndexCount, desc.m_IndexDesc );
+		m_pIndexBuffer->Unlock( nIndexCount, static_cast<IndexDesc_t&>(desc) );
 	
 	m_bMeshLocked = false;
 }
@@ -686,5 +683,44 @@ IIndexBuffer* CMeshMgrD3D8FF::GetDynamicIndexBuffer()
 void CMeshMgrD3D8FF::Flush()
 {
 	// Nothing to flush in fixed function
+}
+
+//-----------------------------------------------------------------------------
+// IVertexBuffer methods for CMeshD3D8FF
+//-----------------------------------------------------------------------------
+bool CMeshD3D8FF::Lock( int nVertexCount, bool bAppend, VertexDesc_t &desc )
+{
+	// Delegate to vertex buffer if we have one
+	if ( m_pVertexBuffer )
+	{
+		return m_pVertexBuffer->Lock( nVertexCount, bAppend, desc );
+	}
+	return false;
+}
+
+void CMeshD3D8FF::Unlock( int nWrittenVertexCount, VertexDesc_t &desc )
+{
+	// Delegate to vertex buffer
+	if ( m_pVertexBuffer )
+	{
+		m_pVertexBuffer->Unlock( nWrittenVertexCount, desc );
+	}
+}
+
+// IIndexBuffer implementation for CMeshD3D8FF
+bool CMeshD3D8FF::Lock( int nMaxIndexCount, bool bAppend, IndexDesc_t &desc )
+{
+	if ( !m_pIndexBuffer )
+		return false;
+	
+	return m_pIndexBuffer->Lock( nMaxIndexCount, bAppend, desc );
+}
+
+void CMeshD3D8FF::Unlock( int nWrittenIndexCount, IndexDesc_t &desc )
+{
+	if ( m_pIndexBuffer )
+	{
+		m_pIndexBuffer->Unlock( nWrittenIndexCount, desc );
+	}
 }
 

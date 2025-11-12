@@ -422,12 +422,16 @@ void CShaderAPID3D8FF::SetSkinningMatrices()
 //-----------------------------------------------------------------------------
 ImageFormat CShaderAPID3D8FF::GetNearestSupportedFormat( ImageFormat fmt, bool bFilteringRequired ) const
 {
-	return HardwareConfig()->GetNearestSupportedFormat( fmt );
+	// TODO: Implement proper format conversion
+	// For now, just return the requested format
+	return fmt;
 }
 
 ImageFormat CShaderAPID3D8FF::GetNearestRenderTargetFormat( ImageFormat fmt ) const
 {
-	return HardwareConfig()->GetNearestRenderTargetFormat( fmt );
+	// TODO: Implement proper format conversion
+	// For now, just return the requested format
+	return fmt;
 }
 
 bool CShaderAPID3D8FF::DoRenderTargetsNeedSeparateDepthBuffer() const

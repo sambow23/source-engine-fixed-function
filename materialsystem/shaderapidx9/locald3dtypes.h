@@ -412,9 +412,14 @@ typedef intp PixelShader_t;
 	// ToGL: use OpenGL wrapper
 	#include "togl/rendermechanism.h"
 #else
-	// Windows: use real DirectX
-	#include <d3d9.h>
-	#include <d3dx9.h>
+	// Windows: use real DirectX from local SDK
+	#if defined( _WIN32 ) && !defined( _X360 )
+		#include "../../dx9sdk/include/d3d9.h"
+		#include "../../dx9sdk/include/d3dx9.h"
+	#else
+		#include <d3d9.h>
+		#include <d3dx9.h>
+	#endif
 #endif
 
 #if defined( _X360 )

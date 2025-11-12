@@ -300,7 +300,6 @@ public:
 	virtual void GetSceneFogColor( unsigned char *rgb );
 	virtual void SceneFogMode( MaterialFogMode_t fogMode );
 	virtual bool CanDownloadTextures() const;
-	virtual void ResetRenderState( bool bFullReset = true );
 	virtual int GetCurrentDynamicVBSize( void );
 	virtual void DestroyVertexBuffers( bool bExitingLevel = false );
 	virtual void ReadPixels( int x, int y, int width, int height, unsigned char *data, ImageFormat dstFormat );
@@ -328,6 +327,110 @@ public:
 	virtual void TexImageFromVTF( IVTFTexture* pVTF, int iVTFFrame );
 	virtual bool TexLock( int level, int cubeFaceID, int xOffset, int yOffset, int width, int height, CPixelWriter& writer );
 	virtual void TexUnlock();
+	
+	// Missing IShaderAPI abstract methods
+	virtual void ClearStencilBufferRectangle( int xmin, int ymin, int xmax, int ymax, int stencilValue );
+	virtual void GetDXLevelDefaults( uint &max_dxlevel, uint &recommended_dxlevel );
+	virtual const FlashlightState_t& GetFlashlightStateEx( VMatrix &worldToTexture, ITexture **pFlashlightDepthTexture ) const;
+	virtual float GetAmbientLightCubeLuminance( void );
+	virtual void GetDX9LightState( LightState_t *state ) const;
+	virtual int GetPixelFogCombo( void );
+	virtual void BindStandardVertexTexture( VertexTextureSampler_t sampler, StandardTextureId_t id );
+	virtual bool IsHWMorphingEnabled( void ) const;
+	virtual void GetStandardTextureDimensions( int *pWidth, int *pHeight, StandardTextureId_t id );
+	virtual int GetNumActiveDeformations( void ) const;
+	virtual int GetPackedDeformationInformation( int nMaskOfUnderstoodDeformations, float *pConstantValuesOut, int nBufferSize, int nMaximumDeformations, int *pNumDefsOut ) const;
+	virtual void ExecuteCommandBuffer( uint8 *pCmdBuffer );
+	virtual void SetStandardTextureHandle( StandardTextureId_t id, ShaderAPITextureHandle_t handle );
+	virtual void GetCurrentColorCorrection( ShaderColorCorrectionInfo_t *pInfo );
+	virtual ShaderAPITextureHandle_t CreateTexture( int width, int height, int depth, ImageFormat dstImageFormat, int numMipLevels, int numCopies, int flags, const char *pDebugName, const char *pTextureGroupName );
+	virtual ShaderAPITextureHandle_t CreateDepthTexture( ImageFormat renderTargetFormat, int width, int height, const char *pDebugName, bool bTexture );
+	virtual void TexImage2D( int level, int cubeFace, ImageFormat dstFormat, int zOffset, int width, int height, ImageFormat srcFormat, bool bSrcIsTiled, void *imageData );
+	virtual void TexSubImage2D( int level, int cubeFace, int xOffset, int yOffset, int zOffset, int width, int height, ImageFormat srcFormat, int srcStride, bool bSrcIsTiled, void *imageData );
+	
+	// Stencil operations
+	virtual void SetStencilEnable( bool bEnable );
+	virtual void SetStencilFailOperation( StencilOperation_t op );
+	virtual void SetStencilZFailOperation( StencilOperation_t op );
+	virtual void SetStencilPassOperation( StencilOperation_t op );
+	virtual void SetStencilCompareFunction( StencilComparisonFunction_t cmpfn );
+	virtual void SetStencilReferenceValue( int ref );
+	virtual void SetStencilTestMask( uint32 msk );
+	virtual void SetStencilWriteMask( uint32 msk );
+	
+	// Rendering parameter accessors
+	virtual float GetFloatRenderingParameter( int parm_number ) const;
+	virtual int GetIntRenderingParameter( int parm_number ) const;
+	virtual Vector GetVectorRenderingParameter( int parm_number ) const;
+	virtual void SetFloatRenderingParameter( int parm_number, float value );
+	virtual void SetIntRenderingParameter( int parm_number, int value );
+	virtual void SetVectorRenderingParameter( int parm_number, const Vector &value );
+	
+	// Projection matrix setup
+	virtual void PerspectiveOffCenterX( double fovx, double aspect, double zNear, double zFar, double bottom, double top, double left, double right );
+	
+	// Additional IShaderDynamicAPI methods
+	virtual void BindStandardTexture( Sampler_t sampler, StandardTextureId_t id );
+	virtual ITexture *GetRenderTargetEx( int nRenderTargetID );
+	virtual void SetToneMappingScaleLinear( const Vector &scale );
+	virtual const Vector &GetToneMappingScaleLinear( void ) const;
+	virtual float GetLightMapScaleFactor( void ) const;
+	virtual void LoadBoneMatrix( int boneIndex, const float *pMatrix );
+	virtual const LightDesc_t &GetLight( int lightNum ) const;
+	virtual void SetPixelShaderFogParams( int reg );
+	virtual void SetVertexShaderStateAmbientLightCube();
+	virtual void SetPixelShaderStateAmbientLightCube( int pshReg, bool bForceToBlack = false );
+	virtual void CommitPixelShaderLighting( int pshReg );
+	virtual CMeshBuilder *GetVertexModifyBuilder();
+	virtual bool InFlashlightMode() const;
+	virtual const FlashlightState_t &GetFlashlightState( VMatrix &worldToTexture ) const;
+	virtual bool InEditorMode() const;
+	virtual MorphFormat_t GetBoundMorphFormat();
+	virtual void SetBumpEnvMatrix( TextureStage_t textureStage, float m00, float m01, float m10, float m11 );
+	virtual void SetVertexShaderIndex( int vshIndex );
+	virtual void SetPixelShaderIndex( int pshIndex );
+	virtual void GetBackBufferDimensions( int &width, int &height ) const;
+	virtual int GetMaxLights() const;
+	virtual void Color4ubv( const unsigned char *rgba );
+	virtual void SetVertexShaderConstant( int var, const float *pVec, int numConst = 1, bool bForce = false );
+	virtual void SetPixelShaderConstant( int var, const float *pVec, int numConst = 1, bool bForce = false );
+	virtual void SetDefaultState();
+	virtual void GetWorldSpaceCameraPosition( float *pPos ) const;
+	virtual int GetCurrentNumBones() const;
+	virtual int GetCurrentLightCombo() const;
+	virtual MaterialFogMode_t GetCurrentFogType() const;
+	virtual void SetTextureTransformDimension( TextureStage_t textureStage, int dimension, bool projected );
+	virtual void DisableTextureTransform( TextureStage_t textureStage );
+	
+	// Immediate mode transform/color (not typically used)
+	virtual void Translate( float x, float y, float z );
+	virtual void Scale( float x, float y, float z );
+	virtual void ScaleXY( float x, float y );
+	virtual void Color3f( float r, float g, float b );
+	virtual void Color3fv( const float *rgb );
+	virtual void Color4f( float r, float g, float b, float a );
+	virtual void Color4fv( const float *rgba );
+	virtual void Color3ub( unsigned char r, unsigned char g, unsigned char b );
+	virtual void Color3ubv( const unsigned char *rgb );
+	virtual void Color4ub( unsigned char r, unsigned char g, unsigned char b, unsigned char a );
+	
+	// Immediate mode matrix operations
+	virtual void LoadMatrix( float *m );
+	virtual void MultMatrix( float *m );
+	virtual void MultMatrixLocal( float *m );
+	virtual void GetMatrix( MaterialMatrixMode_t matrixMode, float *dst );
+	virtual void LoadIdentity();
+	virtual void LoadCameraToWorld();
+	virtual void Ortho( double left, double right, double bottom, double top, double zNear, double zFar );
+	virtual void PerspectiveX( double fovx, double aspect, double zNear, double zFar );
+	virtual void PickMatrix( int x, int y, int width, int height );
+	virtual void Rotate( float angle, float x, float y, float z );
+	virtual double CurrentTime() const;
+	virtual void GetLightmapDimensions( int *w, int *h );
+	virtual MaterialFogMode_t GetSceneFogMode();
+	virtual void MatrixMode( MaterialMatrixMode_t matrixMode );
+	virtual void PushMatrix();
+	virtual void PopMatrix();
 	
 	// D3D8FF specific
 	virtual void SetTextureStageState( int stage, const D3D8FFTextureStageState_t &state );

@@ -11,7 +11,15 @@
 #pragma once
 #endif
 
+// Include Direct3D headers first
+#include "locald3dtypes.h"
+
+// Include shader API interfaces
+#include "shaderapi/ishaderapi.h"
 #include "shaderapi/ishadershadow.h"
+#include "shaderapi/ishaderdynamic.h"
+
+// Include local D3D8FF headers
 #include "shaderapid3d8ff_global.h"
 #include "shaderdeviced3d8ff.h"
 

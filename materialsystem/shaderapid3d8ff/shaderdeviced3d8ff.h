@@ -192,8 +192,8 @@ protected:
 	bool ResizeWindow( const ShaderDeviceInfo_t &info );
 
 	// FIXME: This is for backward compat
-	virtual bool OnAdapterSet() = 0;
-	virtual void ResetRenderState( bool bFullReset = true ) = 0;
+	virtual bool OnAdapterSet();
+	virtual void ResetRenderState( bool bFullReset = true );
 
 	bool InNonInteractiveMode() const;
 	void ReacquireResourcesInternal( bool bResetState = false, bool bForceReacquire = false, char const *pszForceReason = NULL );

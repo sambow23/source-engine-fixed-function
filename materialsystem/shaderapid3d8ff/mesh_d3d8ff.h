@@ -23,6 +23,7 @@
 class CVertexBufferD3D8FF;
 class CIndexBufferD3D8FF;
 class CMeshD3D8FF;
+struct ICachedPerFrameMeshData;
 
 //-----------------------------------------------------------------------------
 // Vertex buffer for D3D8FF
@@ -81,7 +82,7 @@ public:
 
 	// IIndexBuffer implementation
 	virtual int IndexCount() const { return m_nIndexCount; }
-	virtual MaterialIndexFormat_t GetIndexFormat() const { return m_IndexFormat; }
+	virtual MaterialIndexFormat_t IndexFormat() const { return m_IndexFormat; }
 	virtual bool IsDynamic() const { return IsDynamicBufferType( m_Type ); }
 	virtual void BeginCastBuffer( MaterialIndexFormat_t format ) {}
 	virtual void EndCastBuffer() {}
@@ -143,7 +144,7 @@ public:
 	virtual VertexFormat_t GetVertexFormat() const { return m_VertexFormat; }
 
 	// Lock/unlock
-	virtual void LockMesh( int nVertexCount, int nIndexCount, MeshDesc_t &desc, MeshBuffersAllocationSettings_t *pSettings = 0 );
+	virtual void LockMesh( int nVertexCount, int nIndexCount, MeshDesc_t &desc );
 	virtual void ModifyBegin( int nFirstVertex, int nVertexCount, int nFirstIndex, int nIndexCount, MeshDesc_t &desc ) {}
 	virtual void ModifyEnd( MeshDesc_t &desc ) {}
 	virtual void UnlockMesh( int nVertexCount, int nIndexCount, MeshDesc_t &desc );
@@ -152,7 +153,33 @@ public:
 	virtual void Spew( int nVertexCount, int nIndexCount, const MeshDesc_t &desc ) {}
 	virtual void ValidateData( int nVertexCount, int nIndexCount, const MeshDesc_t &desc ) {}
 
+	// IVertexBuffer implementation
+	virtual int VertexCount() const { return m_pVertexBuffer ? m_pVertexBuffer->VertexCount() : 0; }
+	virtual bool IsDynamic() const { return m_pVertexBuffer ? m_pVertexBuffer->IsDynamic() : false; }
+	virtual void BeginCastBuffer( VertexFormat_t format ) {}
+	virtual void EndCastBuffer() {}
+	virtual int GetRoomRemaining() const { return 0; }
+	virtual bool Lock( int nVertexCount, bool bAppend, VertexDesc_t &desc );
+	virtual void Unlock( int nWrittenVertexCount, VertexDesc_t &desc );
+	virtual void Spew( int nVertexCount, const VertexDesc_t &desc ) {}
+	virtual void ValidateData( int nVertexCount, const VertexDesc_t &desc ) {}
+	
+	// IIndexBuffer implementation
+	virtual int IndexCount() const { return m_pIndexBuffer ? m_pIndexBuffer->IndexCount() : 0; }
+	virtual MaterialIndexFormat_t IndexFormat() const { return m_pIndexBuffer ? m_pIndexBuffer->IndexFormat() : MATERIAL_INDEX_FORMAT_16BIT; }
+	virtual void BeginCastBuffer( MaterialIndexFormat_t format ) {}
+	virtual bool Lock( int nMaxIndexCount, bool bAppend, IndexDesc_t &desc );
+	virtual void Unlock( int nWrittenIndexCount, IndexDesc_t &desc );
+	virtual void ModifyBegin( bool bReadOnly, int nFirstIndex, int nIndexCount, IndexDesc_t &desc ) {}
+	virtual void ModifyEnd( IndexDesc_t &desc ) {}
+	virtual void Spew( int nIndexCount, const IndexDesc_t &desc ) {}
+	virtual void ValidateData( int nIndexCount, const IndexDesc_t &desc ) {}
+	
 	// IMesh stubs
+	virtual void ModifyBeginEx( bool bReadOnly, int firstVertex, int numVerts, int firstIndex, int numIndices, MeshDesc_t &desc ) {}
+	virtual void SetFlexMesh( IMesh *pMesh, int nVertexOffset ) {}
+	virtual void DisableFlexMesh() {}
+	virtual void MarkAsDrawn() {}
 	virtual void DrawModulated( const Vector4D &diffuseModulation, int nFirstIndex = -1, int nIndexCount = 0 ) { Draw( nFirstIndex, nIndexCount ); }
 	virtual unsigned int ComputeMemoryUsed() { return 0; }
 	virtual void *AccessRawHardwareDataStream( uint8 nRawStreamIndex, uint32 numBytes, uint32 uiFlags, void *pvContext ) { return NULL; }

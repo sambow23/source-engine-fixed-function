@@ -79,21 +79,21 @@ void CShaderDeviceMgrD3D8FF::Disconnect()
 //-----------------------------------------------------------------------------
 InitReturnVal_t CShaderDeviceMgrD3D8FF::Init()
 {
-	InitReturnVal_t nRetVal = BaseClass::Init();
-	if ( nRetVal != INIT_OK )
-		return nRetVal;
-
+	// Don't call BaseClass::Init() - IAppSystem::Init() is pure virtual
+	// Our initialization is done in Connect() and InitAdapterInfo()
+	
 	if ( !DetermineHardwareCaps() )
 		return INIT_FAILED;
 
 	Msg( "D3D8FF: Initialized fixed function backend\n" );
-
+	
 	return INIT_OK;
 }
 
 void CShaderDeviceMgrD3D8FF::Shutdown()
 {
-	BaseClass::Shutdown();
+	// Don't call BaseClass::Shutdown() - IAppSystem::Shutdown() is pure virtual
+	// Cleanup is handled by our own ShutdownDevice() and destructor
 }
 
 //-----------------------------------------------------------------------------
@@ -126,7 +126,7 @@ void CShaderDeviceMgrD3D8FF::InitAdapterInfo()
 		// Force to DX8 level for fixed function
 		caps.m_nDXSupportLevel = 80;
 		caps.m_nMaxDXSupportLevel = 80;
-		caps.m_nMinDXSupportLevel = 80;
+		// Note: m_nMinDXSupportLevel doesn't exist in HardwareCaps_t
 		caps.m_SupportsPixelShaders = false;
 		caps.m_SupportsVertexShaders = false;
 		
@@ -195,10 +195,10 @@ bool CShaderDeviceMgrD3D8FF::ComputeCapsFromD3D( HardwareCaps_t *pCaps, int nAda
 	
 	// Lighting
 	pCaps->m_SupportsHardwareLighting = ( caps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT ) != 0;
-	pCaps->m_MaxActiveLights = min( (int)caps.MaxActiveLights, D3D8FF_MAX_LIGHTS );
+	// Note: m_MaxActiveLights doesn't exist in HardwareCaps_t, lighting is handled separately
 	
 	// Anisotropic filtering
-	pCaps->m_SupportsAnisotropicFiltering = ( caps.TextureFilterCaps & D3DPTFILTERCAPS_MAGFANISOTROPIC ) != 0;
+	// Note: m_SupportsAnisotropicFiltering doesn't exist in HardwareCaps_t
 	pCaps->m_nMaxAnisotropy = caps.MaxAnisotropy;
 	
 	// Cube maps
@@ -209,8 +209,7 @@ bool CShaderDeviceMgrD3D8FF::ComputeCapsFromD3D( HardwareCaps_t *pCaps, int nAda
 	pCaps->m_SupportsNonPow2Textures = ( caps.TextureCaps & D3DPTEXTURECAPS_POW2 ) == 0;
 	
 	// Vertex processing
-	pCaps->m_nMaxVertexShaderBlendMatrices = caps.MaxVertexBlendMatrices;
-	pCaps->m_nMaxUserClipPlanes = caps.MaxUserClipPlanes;
+	// Note: m_nMaxVertexShaderBlendMatrices and m_nMaxUserClipPlanes don't exist in HardwareCaps_t
 	pCaps->m_bSoftwareVertexProcessing = ( caps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT ) == 0;
 	
 	// Gamma ramp
@@ -219,8 +218,7 @@ bool CShaderDeviceMgrD3D8FF::ComputeCapsFromD3D( HardwareCaps_t *pCaps, int nAda
 	// No shader support in fixed function
 	pCaps->m_SupportsPixelShaders = false;
 	pCaps->m_SupportsVertexShaders = false;
-	pCaps->m_NumPixelShaderRenderTargets = 0;
-	pCaps->m_SupportsVertexTextures = false;
+	// Note: m_NumPixelShaderRenderTargets and m_SupportsVertexTextures don't exist in HardwareCaps_t
 	
 	// DX level
 	ComputeDXSupportLevel( *pCaps );
@@ -236,7 +234,7 @@ void CShaderDeviceMgrD3D8FF::ComputeDXSupportLevel( HardwareCaps_t &caps )
 	// Fixed function backend reports DX8 level
 	caps.m_nDXSupportLevel = 80;
 	caps.m_nMaxDXSupportLevel = 80;
-	caps.m_nMinDXSupportLevel = 80;
+	// Note: m_nMinDXSupportLevel doesn't exist in HardwareCaps_t
 	
 	Msg( "D3D8FF: Reporting DX8.0 fixed function capabilities\n" );
 }
@@ -307,8 +305,8 @@ bool CShaderDeviceMgrD3D8FF::SetAdapter( int nAdapter, int nFlags )
 	const HardwareCaps_t &actualCaps = m_Adapters[nAdapter].m_ActualCaps;
 	ReadHardwareCaps( const_cast<HardwareCaps_t&>( actualCaps ), actualCaps.m_nDXSupportLevel );
 	
-	// Set up hardware config
-	HardwareConfig()->SetupHardwareCaps( actualCaps.m_nDXSupportLevel, actualCaps );
+	// Set up hardware config (cast to CHardwareConfig to access internal methods)
+	((CHardwareConfig*)g_pHWConfig)->SetupHardwareCaps( actualCaps.m_nDXSupportLevel, actualCaps );
 	
 	return true;
 }
@@ -322,7 +320,7 @@ bool CShaderDeviceMgrD3D8FF::ValidateMode( int nAdapter, const ShaderDeviceInfo_
 		return false;
 	
 	// Check if format is supported
-	D3DFORMAT d3dFormat = ImageLoader::ImageFormatToD3DFormat( info.m_DisplayMode.m_Format );
+	D3DFORMAT d3dFormat = (D3DFORMAT)ImageLoader::ImageFormatToD3DFormat( info.m_DisplayMode.m_Format );
 	HRESULT hr = m_pD3D->CheckDeviceType( nAdapter, D3D8FF_DEVTYPE, d3dFormat, d3dFormat, info.m_bWindowed );
 	
 	return SUCCEEDED( hr );
@@ -336,8 +334,9 @@ int CShaderDeviceMgrD3D8FF::GetVidMemBytes( int nAdapter ) const
 	if ( !m_pD3D || nAdapter < 0 || nAdapter >= GetAdapterCount() )
 		return 0;
 	
-	// Query available texture memory
-	return m_pD3D->GetAvailableTextureMem( nAdapter );
+	// D3D9 doesn't have GetAvailableTextureMem on the D3D object, only on the device
+	// We'll return the texture memory size from our caps structure
+	return m_Adapters[nAdapter].m_ActualCaps.m_TextureMemorySize;
 }
 
 //-----------------------------------------------------------------------------
@@ -510,4 +509,26 @@ void CShaderDeviceD3D8FF::CheckDeviceLost( bool bOtherAppInitializing ) {}
 bool CShaderDeviceD3D8FF::ResizeWindow( const ShaderDeviceInfo_t &info ) { return false; }
 bool CShaderDeviceD3D8FF::InNonInteractiveMode() const { return false; }
 void CShaderDeviceD3D8FF::ReacquireResourcesInternal( bool bResetState, bool bForceReacquire, char const *pszForceReason ) {}
+
+//-----------------------------------------------------------------------------
+// Called when the adapter is set
+//-----------------------------------------------------------------------------
+bool CShaderDeviceD3D8FF::OnAdapterSet()
+{
+	// Nothing special needs to be done for D3D8FF
+	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Resets the render state
+//-----------------------------------------------------------------------------
+void CShaderDeviceD3D8FF::ResetRenderState( bool bFullReset )
+{
+	// Reset D3D9 fixed function state to defaults
+	if ( g_pD3DDevice )
+	{
+		// This will be implemented when we have a working device
+		// For now, just stub it out
+	}
+}
 
