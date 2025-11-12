@@ -306,7 +306,11 @@ int GetNumMipMapLevels( int width, int height, int depth )
 // whether it's supported or not
 //-----------------------------------------------------------------------------
 #if (defined( _WIN32 ) && !defined( _X360 ) && !defined( DX_TO_GL_ABSTRACTION )) || defined( USE_DXVK_NATIVE )
-ImageFormat D3DFormatToImageFormat( int format )  // D3DFORMAT is typedef int
+#ifdef USE_DXVK_NATIVE
+ImageFormat D3DFormatToImageFormat( int format )  // DXVK: D3DFORMAT is typedef int
+#else
+ImageFormat D3DFormatToImageFormat( D3DFORMAT format )  // Windows: Use D3DFORMAT directly
+#endif
 {
 #if defined( _X360 )
 	if ( IS_D3DFORMAT_SRGB( format ) )
@@ -424,7 +428,11 @@ ImageFormat D3DFormatToImageFormat( int format )  // D3DFORMAT is typedef int
 	return IMAGE_FORMAT_UNKNOWN;
 }
 
-int ImageFormatToD3DFormat( ImageFormat format )  // Returns D3DFORMAT (typedef int)
+#ifdef USE_DXVK_NATIVE
+int ImageFormatToD3DFormat( ImageFormat format )  // DXVK: Returns int
+#else
+D3DFORMAT ImageFormatToD3DFormat( ImageFormat format )  // Windows: Returns D3DFORMAT directly
+#endif
 {
 	// This doesn't care whether it's supported or not
 	switch ( format )

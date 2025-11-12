@@ -412,8 +412,15 @@ namespace ImageLoader
 	// whether it's supported or not
 	//-----------------------------------------------------------------------------
 	#if (defined(_WIN32) && !defined(_X360) && !defined(DX_TO_GL_ABSTRACTION)) || defined(USE_DXVK_NATIVE)
-	ImageFormat D3DFormatToImageFormat( int format );   // Use int instead of D3DFORMAT for compatibility
-	int ImageFormatToD3DFormat( ImageFormat format );
+	#ifdef USE_DXVK_NATIVE
+		// DXVK: Use int for compatibility since D3DFORMAT is defined differently
+		ImageFormat D3DFormatToImageFormat( int format );
+		int ImageFormatToD3DFormat( ImageFormat format );
+	#else
+		// Windows with actual DirectX SDK: Use D3DFORMAT directly
+		ImageFormat D3DFormatToImageFormat( D3DFORMAT format );
+		D3DFORMAT ImageFormatToD3DFormat( ImageFormat format );
+	#endif
 	#endif
 
 	// Flags for ResampleRGBA8888
