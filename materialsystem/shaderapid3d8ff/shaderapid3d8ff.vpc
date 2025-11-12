@@ -1,0 +1,79 @@
+//-----------------------------------------------------------------------------
+//	SHADERAPID3D8FF.VPC
+//
+//	Project Script - D3D8 Fixed Function Shader API
+//-----------------------------------------------------------------------------
+
+$Macro SRCDIR		"..\.."
+$Macro OUTBINDIR	"$SRCDIR\..\game\bin"
+$Macro OUTBINNAME	"shaderapid3d8ff"
+
+$include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+// Common Configuration
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories	"$BASE;..\"
+		$AdditionalIncludeDirectories	"$BASE;..\shaderapidx9"
+		$PreprocessorDefinitions		"$BASE;SHADERAPID3D8FF_DLL_EXPORT;PROTECTED_THINGS_ENABLE;strncpy=use_Q_strncpy_instead;_snprintf=use_Q_snprintf_instead"
+	}
+
+	$Linker
+	{
+		$AdditionalDependencies			"$BASE d3d9.lib d3dx9.lib" [$WINDOWS]
+		$ImportLibrary					"$LIBPUBLIC\$_IMPLIB_PREFIX$OUTBINNAME$_IMPLIB_EXT"
+	}
+
+	$PreLinkEvent [$WINDOWS]
+	{
+		$CommandLine	"call $SRCDIR\vpc_scripts\valve_p4_edit.cmd $LIBPUBLIC\$(TargetName).lib $SRCDIR" "\n" \
+						"$BASE"
+	}
+}
+
+$Project "shaderapid3d8ff"
+{
+	$Folder	"Source Files"
+	{
+		$File	"shaderapid3d8ff.cpp"
+		$File	"shaderdeviced3d8ff.cpp"
+		$File	"hardwareconfig.cpp"
+		
+		// Reuse some base classes from shaderapidx9
+		$File	"..\shaderapidx9\shaderdevicebase.cpp"
+		$File	"..\shaderapidx9\shaderapibase.cpp"
+	}
+
+	$Folder	"Header Files"
+	{
+		$File	"shaderapid3d8ff.h"
+		$File	"shaderapid3d8ff_global.h"
+		$File	"shaderdeviced3d8ff.h"
+		$File	"hardwareconfig.h"
+		$File	"locald3dtypes.h"
+	}
+
+	$Folder	"Public Header Files"
+	{
+		$File	"$SRCDIR\public\shaderapi\ishaderapi.h"
+		$File	"$SRCDIR\public\shaderapi\ishaderdynamic.h"
+		$File	"$SRCDIR\public\shaderapi\ishadershadow.h"
+		$File	"$SRCDIR\public\shaderapi\IShaderDevice.h"
+		$File	"$SRCDIR\public\materialsystem\imaterialsystem.h"
+		$File	"$SRCDIR\public\materialsystem\imaterial.h"
+	}
+
+	$Folder	"Link Libraries"
+	{
+		$Lib tier0
+		$Lib tier1
+		$Lib tier2
+		$Lib vstdlib
+		$Lib mathlib
+		$Lib bitmap
+		$Lib vtf
+	}
+}
+

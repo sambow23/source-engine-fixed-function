@@ -68,6 +68,7 @@ projects={
 		'materialsystem',
 #		'materialsystem/shaderapiempty',
 		'materialsystem/shaderapidx9',
+		'materialsystem/shaderapid3d8ff',
 		'materialsystem/shaderlib',
 		'materialsystem/stdshaders',
 		'mathlib',
@@ -457,6 +458,7 @@ def check_deps(conf):
 		# conf.multicheck(*a, run_all_tests = True, mandatory = True)
 
 def configure(conf):
+	import os  # Ensure os module is explicitly available in this scope
 	conf.load('fwgslib reconfigure compiler_optimizations')
 
 	# Force XP compability, all build targets should add

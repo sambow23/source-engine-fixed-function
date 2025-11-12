@@ -756,6 +756,11 @@ bool CSourceAppSystemGroup::Create()
 	{
 		pDLLName = "shaderapiempty" DLL_EXT_STRING;
 	}
+	else if ( CommandLine()->FindParm( "-d3d8ff" ) || CommandLine()->FindParm( "-rtxremix" ) )
+	{
+		pDLLName = "shaderapid3d8ff" DLL_EXT_STRING;
+		Msg( "Using D3D8 Fixed Function backend (RTX Remix compatible)\n" );
+	}
 
 	pMaterialSystem->SetShaderAPI( pDLLName );
 
